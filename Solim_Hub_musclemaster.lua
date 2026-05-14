@@ -1,155 +1,161 @@
---// MUSCLE MASTER SIMULATOR CORE (FULL VERSION)
+--// SOLIM HUB - MOBILE UI + KEY SYSTEM
 
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local DataStoreService = game:GetService("DataStoreService")
+local player = Players.LocalPlayer
 
-local DS = DataStoreService:GetDataStore("MuscleMaster_FULL_V2")
+--// KEY
+local CORRECT_KEY = "solimontop"
 
---////////////////////////////
---// PLAYER SETUP
---////////////////////////////
+--// GUI
+local gui = Instance.new("ScreenGui")
+gui.Name = "SOLIM_HUB"
+gui.ResetOnSpawn = false
+gui.Parent = game:GetService("CoreGui")
 
-Players.PlayerAdded:Connect(function(plr)
+--// MAIN FRAME
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0.9, 0, 0.6, 0)
+frame.Position = UDim2.new(0.05, 0, 0.2, 0)
+frame.BackgroundColor3 = Color3.fromRGB(60, 0, 120)
+frame.Parent = gui
+Instance.new("UICorner", frame)
 
-	local stats = Instance.new("Folder")
-	stats.Name = "leaderstats"
-	stats.Parent = plr
+--// TITLE
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, 0, 0.12, 0)
+title.BackgroundTransparency = 1
+title.Text = "💜 SOLIM HUB"
+title.TextColor3 = Color3.new(1,1,1)
+title.TextScaled = true
+title.Parent = frame
 
-	local Strength = Instance.new("IntValue")
-	Strength.Name = "Strength"
-	Strength.Parent = stats
+--// KEY FRAME (LOCK SCREEN)
+local keyFrame = Instance.new("Frame")
+keyFrame.Size = UDim2.new(1,0,1,0)
+keyFrame.BackgroundColor3 = Color3.fromRGB(40,0,90)
+keyFrame.Parent = frame
+Instance.new("UICorner", keyFrame)
 
-	local Coins = Instance.new("IntValue")
-	Coins.Name = "Coins"
-	Coins.Parent = stats
+local keyTitle = Instance.new("TextLabel")
+keyTitle.Size = UDim2.new(1,0,0.2,0)
+keyTitle.BackgroundTransparency = 1
+keyTitle.Text = "🔐 ENTER KEY"
+keyTitle.TextColor3 = Color3.new(1,1,1)
+keyTitle.TextScaled = true
+keyTitle.Parent = keyFrame
 
-	local Rebirths = Instance.new("IntValue")
-	Rebirths.Name = "Rebirths"
-	Rebirths.Parent = stats
+local keyBox = Instance.new("TextBox")
+keyBox.Size = UDim2.new(0.8,0,0.12,0)
+keyBox.Position = UDim2.new(0.1,0,0.35,0)
+keyBox.PlaceholderText = "Enter Key..."
+keyBox.Text = ""
+keyBox.TextScaled = true
+keyBox.BackgroundColor3 = Color3.fromRGB(140,0,255)
+keyBox.TextColor3 = Color3.new(1,1,1)
+keyBox.Parent = keyFrame
+Instance.new("UICorner", keyBox)
 
-	local Multiplier = Instance.new("NumberValue")
-	Multiplier.Name = "Multiplier"
-	Multiplier.Value = 1
-	Multiplier.Parent = plr
+local unlock = Instance.new("TextButton")
+unlock.Size = UDim2.new(0.8,0,0.12,0)
+unlock.Position = UDim2.new(0.1,0,0.55,0)
+unlock.Text = "UNLOCK"
+unlock.TextScaled = true
+unlock.BackgroundColor3 = Color3.fromRGB(180,0,255)
+unlock.TextColor3 = Color3.new(1,1,1)
+unlock.Parent = keyFrame
+Instance.new("UICorner", unlock)
 
-	local Pets = Instance.new("StringValue")
-	Pets.Name = "EquippedPet"
-	Pets.Value = "None"
-	Pets.Parent = plr
+--// HUB CONTENT (hidden until unlocked)
+local hub = Instance.new("Frame")
+hub.Size = UDim2.new(1,0,1,0)
+hub.BackgroundTransparency = 1
+hub.Visible = false
+hub.Parent = frame
 
-	local data = DS:GetAsync(plr.UserId)
-	if data then
-		Strength.Value = data.Strength or 0
-		Coins.Value = data.Coins or 0
-		Rebirths.Value = data.Rebirths or 0
-	end
+--// BUTTON AREA
+local scroll = Instance.new("ScrollingFrame")
+scroll.Size = UDim2.new(1,-20,0.85,-10)
+scroll.Position = UDim2.new(0,10,0.12,5)
+scroll.BackgroundTransparency = 1
+scroll.ScrollBarThickness = 6
+scroll.CanvasSize = UDim2.new(0,0,2,0)
+scroll.Parent = hub
+
+local y = 0
+
+local function Button(text, callback)
+	local b = Instance.new("TextButton")
+	b.Size = UDim2.new(1,-10,0,60)
+	b.Position = UDim2.new(0,5,0,y)
+	b.BackgroundColor3 = Color3.fromRGB(140,0,255)
+	b.TextColor3 = Color3.new(1,1,1)
+	b.TextScaled = true
+	b.Text = text
+	b.Parent = scroll
+	Instance.new("UICorner", b)
+
+	b.MouseButton1Click:Connect(callback)
+
+	y += 70
+end
+
+--// SYSTEMS
+local AutoTrain = false
+local AutoRebirth = false
+
+Button("💪 AUTO TRAIN", function()
+	AutoTrain = not AutoTrain
 end)
 
-Players.PlayerRemoving:Connect(function(plr)
-	local stats = plr:FindFirstChild("leaderstats")
+Button("🔁 AUTO REBIRTH", function()
+	AutoRebirth = not AutoRebirth
+end)
+
+Button("🏋️ TRAIN +5", function()
+	local stats = player:FindFirstChild("leaderstats")
 	if stats then
-		DS:SetAsync(plr.UserId,{
-			Strength = stats.Strength.Value,
-			Coins = stats.Coins.Value,
-			Rebirths = stats.Rebirths.Value
-		})
+		stats.Strength.Value += 5
 	end
 end)
 
---////////////////////////////
---// PET SYSTEM
---////////////////////////////
+Button("💰 COINS +10", function()
+	local stats = player:FindFirstChild("leaderstats")
+	if stats then
+		stats.Coins.Value += 10
+	end
+end)
 
-local Pets = {
-	Dog = 1.5,
-	Wolf = 2,
-	Dragon = 5,
-	Angel = 10
-}
+Button("🏠 TELEPORT SPAWN", function()
+	local char = player.Character
+	if char and char:FindFirstChild("HumanoidRootPart") then
+		char.HumanoidRootPart.CFrame = CFrame.new(0,10,0)
+	end
+end)
 
-local function ApplyPet(plr)
-	local pet = plr.EquippedPet.Value
-	local mult = Pets[pet] or 1
-	plr.Multiplier.Value = mult
-end
+--// UNLOCK SYSTEM
+unlock.MouseButton1Click:Connect(function()
+	if keyBox.Text == CORRECT_KEY then
+		keyFrame.Visible = false
+		hub.Visible = true
+	else
+		keyBox.Text = "WRONG KEY"
+	end
+end)
 
---////////////////////////////
---// TRAINING SYSTEM
---////////////////////////////
+--// LOOP
+task.spawn(function()
+	while true do
+		task.wait(1)
 
-local function Train(plr, amount)
-	local stats = plr.leaderstats
-	local mult = plr.Multiplier.Value
+		local stats = player:FindFirstChild("leaderstats")
 
-	stats.Strength.Value += amount * mult
-	stats.Coins.Value += math.floor(amount / 2)
-end
+		if AutoTrain and stats then
+			stats.Strength.Value += 1
+		end
 
---////////////////////////////
---// AUTO TRAIN SYSTEM
---////////////////////////////
-
-RunService.Heartbeat:Connect(function()
-	for _,plr in pairs(Players:GetPlayers()) do
-		if plr:GetAttribute("AutoTrain") then
-			Train(plr, 1)
+		if AutoRebirth and stats and stats.Strength.Value >= 100 then
+			stats.Strength.Value = 0
+			stats.Rebirths.Value += 1
 		end
 	end
 end)
-
---////////////////////////////
---// REBIRTH SYSTEM
---////////////////////////////
-
-local function Rebirth(plr)
-	local stats = plr.leaderstats
-
-	if stats.Strength.Value >= 1000 then
-		stats.Strength.Value = 0
-		stats.Coins.Value += 500
-		stats.Rebirths.Value += 1
-		plr.Multiplier.Value += 0.5
-	end
-end
-
---////////////////////////////
---// SHOP SYSTEM
---////////////////////////////
-
-local function BuyBoost(plr)
-	local stats = plr.leaderstats
-
-	if stats.Coins.Value >= 100 then
-		stats.Coins.Value -= 100
-		plr.Multiplier.Value += 0.2
-	end
-end
-
---////////////////////////////
---// TELEPORT SYSTEM
---////////////////////////////
-
-local Teleports = {
-	Gym = CFrame.new(0,10,0),
-	City = CFrame.new(200,10,0),
-	Island = CFrame.new(-200,10,0)
-}
-
-local function Teleport(plr, place)
-	if plr.Character and Teleports[place] then
-		plr.Character.HumanoidRootPart.CFrame = Teleports[place]
-	end
-end
-
---////////////////////////////
---// PUBLIC API (FOR YOUR GUI)
---////////////////////////////
-
-_G.MuscleMaster = {
-	Train = Train,
-	Rebirth = Rebirth,
-	BuyBoost = BuyBoost,
-	Teleport = Teleport,
-	ApplyPet = ApplyPet
-}
