@@ -1,182 +1,155 @@
+--// MUSCLE MASTER SIMULATOR CORE (FULL VERSION)
+
 local Players = game:GetService("Players")
-local player = Players.LocalPlayer
-local UIS = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local DataStoreService = game:GetService("DataStoreService")
 
--- GUI
-local gui = Instance.new("ScreenGui")
-gui.Name = "SoilmHub"
-gui.ResetOnSpawn = false
-pcall(function()
-	gui.Parent = game.CoreGui
+local DS = DataStoreService:GetDataStore("MuscleMaster_FULL_V2")
+
+--////////////////////////////
+--// PLAYER SETUP
+--////////////////////////////
+
+Players.PlayerAdded:Connect(function(plr)
+
+	local stats = Instance.new("Folder")
+	stats.Name = "leaderstats"
+	stats.Parent = plr
+
+	local Strength = Instance.new("IntValue")
+	Strength.Name = "Strength"
+	Strength.Parent = stats
+
+	local Coins = Instance.new("IntValue")
+	Coins.Name = "Coins"
+	Coins.Parent = stats
+
+	local Rebirths = Instance.new("IntValue")
+	Rebirths.Name = "Rebirths"
+	Rebirths.Parent = stats
+
+	local Multiplier = Instance.new("NumberValue")
+	Multiplier.Name = "Multiplier"
+	Multiplier.Value = 1
+	Multiplier.Parent = plr
+
+	local Pets = Instance.new("StringValue")
+	Pets.Name = "EquippedPet"
+	Pets.Value = "None"
+	Pets.Parent = plr
+
+	local data = DS:GetAsync(plr.UserId)
+	if data then
+		Strength.Value = data.Strength or 0
+		Coins.Value = data.Coins or 0
+		Rebirths.Value = data.Rebirths or 0
+	end
 end)
 
--- OPEN BUTTON
-local openButton = Instance.new("TextButton")
-openButton.Parent = gui
-openButton.Size = UDim2.new(0,120,0,40)
-openButton.Position = UDim2.new(0,20,0.5,-20)
-openButton.Text = "OPEN HUB"
-openButton.BackgroundColor3 = Color3.fromRGB(120,0,255)
-openButton.TextColor3 = Color3.new(1,1,1)
+Players.PlayerRemoving:Connect(function(plr)
+	local stats = plr:FindFirstChild("leaderstats")
+	if stats then
+		DS:SetAsync(plr.UserId,{
+			Strength = stats.Strength.Value,
+			Coins = stats.Coins.Value,
+			Rebirths = stats.Rebirths.Value
+		})
+	end
+end)
 
-local openCorner = Instance.new("UICorner")
-openCorner.Parent = openButton
+--////////////////////////////
+--// PET SYSTEM
+--////////////////////////////
 
--- MAIN HUB
-local frame = Instance.new("Frame")
-frame.Parent = gui
-frame.Size = UDim2.new(0,500,0,320)
-frame.Position = UDim2.new(0.5,-250,0.5,-160)
-frame.BackgroundColor3 = Color3.fromRGB(85,0,170)
-frame.Visible = false
+local Pets = {
+	Dog = 1.5,
+	Wolf = 2,
+	Dragon = 5,
+	Angel = 10
+}
 
-local corner = Instance.new("UICorner")
-corner.Parent = frame
-
--- TITLE
-local title = Instance.new("TextLabel")
-title.Parent = frame
-title.Size = UDim2.new(1,0,0,40)
-title.BackgroundTransparency = 1
-title.Text = "SOILM MUSCLE MASTER"
-title.TextScaled = true
-title.TextColor3 = Color3.new(1,1,1)
-
--- CLOSE BUTTON
-local close = Instance.new("TextButton")
-close.Parent = frame
-close.Size = UDim2.new(0,40,0,40)
-close.Position = UDim2.new(1,-45,0,5)
-close.Text = "X"
-close.BackgroundColor3 = Color3.fromRGB(140,0,255)
-close.TextColor3 = Color3.new(1,1,1)
-
-local closeCorner = Instance.new("UICorner")
-closeCorner.Parent = close
-
--- CONTENT
-local content = Instance.new("Frame")
-content.Parent = frame
-content.Size = UDim2.new(1,-20,1,-60)
-content.Position = UDim2.new(0,10,0,50)
-content.BackgroundColor3 = Color3.fromRGB(70,0,140)
-
-local contentCorner = Instance.new("UICorner")
-contentCorner.Parent = content
-
--- DRAGGING
-local dragging = false
-local dragInput
-local dragStart
-local startPos
-
-local function update(input)
-	local delta = input.Position - dragStart
-	frame.Position = UDim2.new(
-		startPos.X.Scale,
-		startPos.X.Offset + delta.X,
-		startPos.Y.Scale,
-		startPos.Y.Offset + delta.Y
-	)
+local function ApplyPet(plr)
+	local pet = plr.EquippedPet.Value
+	local mult = Pets[pet] or 1
+	plr.Multiplier.Value = mult
 end
 
-title.InputBegan:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 then
-		dragging = true
-		dragStart = input.Position
-		startPos = frame.Position
+--////////////////////////////
+--// TRAINING SYSTEM
+--////////////////////////////
 
-		input.Changed:Connect(function()
-			if input.UserInputState == Enum.UserInputState.End then
-				dragging = false
-			end
-		end)
-	end
-end)
+local function Train(plr, amount)
+	local stats = plr.leaderstats
+	local mult = plr.Multiplier.Value
 
-title.InputChanged:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseMovement then
-		dragInput = input
-	end
-end)
-
-UIS.InputChanged:Connect(function(input)
-	if input == dragInput and dragging then
-		update(input)
-	end
-end)
-
--- OPEN/CLOSE
-openButton.MouseButton1Click:Connect(function()
-	frame.Visible = true
-end)
-
-close.MouseButton1Click:Connect(function()
-	frame.Visible = false
-end)
-
--- TOGGLE CREATOR
-local ypos = 10
-
-local function CreateToggle(name, callback)
-	local state = false
-
-	local btn = Instance.new("TextButton")
-	btn.Parent = content
-	btn.Size = UDim2.new(0,220,0,45)
-	btn.Position = UDim2.new(0,10,0,ypos)
-	btn.BackgroundColor3 = Color3.fromRGB(120,0,255)
-	btn.TextColor3 = Color3.new(1,1,1)
-	btn.Text = name .. ": OFF"
-	btn.TextScaled = true
-
-	local c = Instance.new("UICorner")
-	c.Parent = btn
-
-	btn.MouseButton1Click:Connect(function()
-		state = not state
-		btn.Text = name .. ": " .. (state and "ON" or "OFF")
-		callback(state)
-	end)
-
-	ypos += 55
+	stats.Strength.Value += amount * mult
+	stats.Coins.Value += math.floor(amount / 2)
 end
 
--- AUTO FARM
-local AutoFarm = false
+--////////////////////////////
+--// AUTO TRAIN SYSTEM
+--////////////////////////////
 
-CreateToggle("AUTO FARM", function(v)
-	AutoFarm = v
-end)
-
-task.spawn(function()
-	while true do
-		task.wait(1)
-
-		if AutoFarm then
-			print("Auto Farming...")
+RunService.Heartbeat:Connect(function()
+	for _,plr in pairs(Players:GetPlayers()) do
+		if plr:GetAttribute("AutoTrain") then
+			Train(plr, 1)
 		end
 	end
 end)
 
--- AUTO REBIRTH
-local AutoRebirth = false
+--////////////////////////////
+--// REBIRTH SYSTEM
+--////////////////////////////
 
-CreateToggle("AUTO REBIRTH", function(v)
-	AutoRebirth = v
-end)
+local function Rebirth(plr)
+	local stats = plr.leaderstats
 
-task.spawn(function()
-	while true do
-		task.wait(3)
-
-		if AutoRebirth then
-			print("Auto Rebirth...")
-		end
+	if stats.Strength.Value >= 1000 then
+		stats.Strength.Value = 0
+		stats.Coins.Value += 500
+		stats.Rebirths.Value += 1
+		plr.Multiplier.Value += 0.5
 	end
-end)
+end
 
--- PETS
-CreateToggle("PETS BOOST", function(v)
-	print("Pets Boost:", v)
-end)
+--////////////////////////////
+--// SHOP SYSTEM
+--////////////////////////////
+
+local function BuyBoost(plr)
+	local stats = plr.leaderstats
+
+	if stats.Coins.Value >= 100 then
+		stats.Coins.Value -= 100
+		plr.Multiplier.Value += 0.2
+	end
+end
+
+--////////////////////////////
+--// TELEPORT SYSTEM
+--////////////////////////////
+
+local Teleports = {
+	Gym = CFrame.new(0,10,0),
+	City = CFrame.new(200,10,0),
+	Island = CFrame.new(-200,10,0)
+}
+
+local function Teleport(plr, place)
+	if plr.Character and Teleports[place] then
+		plr.Character.HumanoidRootPart.CFrame = Teleports[place]
+	end
+end
+
+--////////////////////////////
+--// PUBLIC API (FOR YOUR GUI)
+--////////////////////////////
+
+_G.MuscleMaster = {
+	Train = Train,
+	Rebirth = Rebirth,
+	BuyBoost = BuyBoost,
+	Teleport = Teleport,
+	ApplyPet = ApplyPet
+}
